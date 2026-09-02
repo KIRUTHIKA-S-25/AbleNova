@@ -15,6 +15,7 @@ from app.db.models.learning_session import LearningSession
 from app.db.models.engagement import EngagementEvent
 from app.db.models.recommendation import Recommendation
 from app.db.models.learning_path import LearningPathItem
+from app.db.models.sync_log import SyncLog
 
 __all__ = [
     "User",
@@ -34,4 +35,5 @@ __all__ = [
     "EngagementEvent",
     "Recommendation",
     "LearningPathItem",
+    "SyncLog",
 ]

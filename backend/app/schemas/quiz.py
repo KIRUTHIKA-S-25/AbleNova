@@ -65,3 +65,7 @@ class QuestionAttemptResponse(BaseModel):
 
 class QuizAttemptCompleteRequest(BaseModel):
     time_taken_seconds: int | None = None
+
+class QuizSubmitRequest(BaseModel):
+    answers: list[QuestionAnswerSubmit]
+    time_taken_seconds: int | None = None

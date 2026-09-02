@@ -19,6 +19,10 @@ from app.schemas.quiz import (
     QuestionAnswerSubmit,
     QuestionAttemptResponse,
     QuizAttemptCompleteRequest,
+    QuizSubmitRequest,
+    # Mastery recalculation service
+    # Import after schemas
+
 )
 
 
