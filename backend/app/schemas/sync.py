@@ -1,16 +1,26 @@
-from typing import Any, List, Dict
+from typing import Any
+
 from pydantic import BaseModel
 
 
+class SyncEventItem(BaseModel):
+    local_id: str
+    type: str
+    payload: dict[str, Any] | None = None
+    created_at: str | None = None
+
+
 class SyncPayload(BaseModel):
-    events: List[Dict[str, Any]] | None = None
-    sessions: List[Dict[str, Any]] | None = None
-    attempts: List[Dict[str, Any]] | None = None
+    events: list[dict[str, Any]] | None = None
+    sessions: list[dict[str, Any]] | None = None
+    attempts: list[dict[str, Any]] | None = None
 
 
 class SyncResponse(BaseModel):
-    processed_events: int
-    processed_sessions: int
-    processed_attempts: int
-    status: str
-    message: str
+    synced: list[str] = []
+    failed: list[Any] = []
+    processed_events: int = 0
+    processed_sessions: int = 0
+    processed_attempts: int = 0
+    status: str = "success"
+    message: str | None = None

@@ -8,7 +8,6 @@ from app.db.models.lesson import Lesson
 from app.db.models.topic import Topic
 from app.schemas.lesson import LessonCreate, LessonResponse
 
-
 router = APIRouter(
     prefix="/lessons",
     tags=["Lessons"],

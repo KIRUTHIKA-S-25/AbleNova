@@ -4,10 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models.topic import Topic
 from app.db.models.subject import Subject
+from app.db.models.topic import Topic
 from app.schemas.topic import TopicCreate, TopicResponse
-
 
 router = APIRouter(
     prefix="/topics",

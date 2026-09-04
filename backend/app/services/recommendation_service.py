@@ -28,15 +28,14 @@ This is deterministic, database-driven, and requires no external APIs.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.db.models.mastery import StudentTopicMastery
 from app.db.models.lesson import Lesson
-from app.db.models.topic import Topic
+from app.db.models.mastery import StudentTopicMastery
 from app.db.models.recommendation import Recommendation
-
+from app.db.models.topic import Topic
 
 # ----------------------------------------------------------------
 # Constants
@@ -139,7 +138,7 @@ def generate_recommendations_for_student(
     )
 
     created_recommendations: list[Recommendation] = []
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for topic in all_topics:
         if len(created_recommendations) >= max_recommendations:

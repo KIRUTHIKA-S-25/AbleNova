@@ -42,7 +42,7 @@ Each item is processed independently. A failure in one item
 does not prevent other items from being processed.
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -86,7 +86,7 @@ def _mark_synced(
         student_id=student_id,
         local_id=local_id,
         event_type=event_type,
-        synced_at=datetime.now(timezone.utc),
+        synced_at=datetime.now(UTC),
     )
     db.add(log)
 
@@ -114,7 +114,7 @@ def _process_engagement_event(
         event_type=str(event_type),
         lesson_id=lesson_id if lesson_id else None,
         duration_seconds=int(duration_seconds) if duration_seconds is not None else None,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     db.add(event)
 
@@ -136,7 +136,7 @@ def _process_learning_session(
 
     duration_seconds = payload.get("duration_seconds")
     completed = payload.get("completed", False)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     session = LearningSession(
         student_id=student_id,

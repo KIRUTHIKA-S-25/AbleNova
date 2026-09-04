@@ -46,4 +46,3 @@ class LearningPathItem(Base):
 
     student = relationship("Student")
     lesson = relationship("Lesson")
-    

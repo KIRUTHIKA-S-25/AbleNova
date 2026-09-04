@@ -1,24 +1,50 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_role
 from app.db.database import get_db
-from app.db.models.student import Student
+from app.db.models.learning_path import LearningPathItem
+from app.db.models.learning_session import LearningSession
+from app.db.models.lesson import Lesson
 from app.db.models.mastery import StudentTopicMastery
 from app.db.models.quiz_attempt import QuizAttempt
-from app.db.models.learning_session import LearningSession
-from app.db.models.engagement import EngagementEvent
-from app.db.models.recommendation import Recommendation
-from app.db.models.learning_path import LearningPathItem
-from app.db.models.lesson import Lesson
+from app.db.models.student import Student
 from app.db.models.user import User
-
+from app.schemas.ai import AIExplanationRequest, AIExplanationResponse
+from app.services.ai_service import generate_ai_explanation
 
 router = APIRouter(
     prefix="/ai",
     tags=["AI Insights"],
 )
+
+
+# ============================================================
+# EXPLANATION ENDPOINT (POST /ai/explanation)
+# ============================================================
+@router.post(
+    "/explanation",
+    response_model=AIExplanationResponse,
+    summary="Get accessible AI-powered explanation matching API Contract Section 13",
+)
+def get_ai_explanation(
+    request: AIExplanationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    result = generate_ai_explanation(
+        question=request.question,
+        lesson_id=request.lesson_id,
+        mode=request.mode,
+        db=db,
+    )
+    return AIExplanationResponse(
+        response=result["response"],
+        source_ids=result["source_ids"],
+        mode=result["mode"],
+    )
+
 
 
 # ============================================================

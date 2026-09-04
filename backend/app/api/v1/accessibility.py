@@ -4,13 +4,12 @@ from sqlalchemy.orm import Session
 from app.core.security import require_role
 from app.db.database import get_db
 from app.db.models.accessibility import AccessibilityProfile
-from app.db.models.user import User
 from app.db.models.student import Student
+from app.db.models.user import User
 from app.schemas.accessibility import (
     AccessibilityProfileCreate,
     AccessibilityProfileResponse,
 )
-
 
 router = APIRouter(
     prefix="/accessibility",

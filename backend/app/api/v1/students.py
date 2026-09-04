@@ -10,7 +10,6 @@ from app.schemas.student import (
     StudentResponse,
 )
 
-
 router = APIRouter(
     prefix="/students",
     tags=["Students"],

@@ -1,21 +1,22 @@
 from fastapi import FastAPI
 
 from app.api.v1 import (
-    subjects,
-    topics,
-    lessons,
-    auth,
-    students,
     accessibility,
-    progress,
+    ai,
+    auth,
     caregivers,
-    teachers,
+    content,
+    learning_path,
+    lessons,
+    progress,
     quizzes,
     recommendations,
-    learning_path,
-    content,
-    ai,
+    student,
+    students,
+    subjects,
     sync,
+    teachers,
+    topics,
 )
 
 app = FastAPI(
@@ -46,6 +47,11 @@ app.include_router(
 
 app.include_router(
     auth.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    student.router,
     prefix="/api/v1",
 )
 

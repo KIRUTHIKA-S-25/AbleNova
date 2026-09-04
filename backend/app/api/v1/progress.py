@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,12 +9,11 @@ from app.core.security import require_role
 from app.db.database import get_db
 from app.db.models.engagement import EngagementEvent
 from app.db.models.learning_session import LearningSession
+from app.db.models.lesson import Lesson
 from app.db.models.mastery import StudentTopicMastery
 from app.db.models.student import Student
-from app.db.models.lesson import Lesson
 from app.db.models.topic import Topic
 from app.db.models.user import User
-
 
 router = APIRouter(
     prefix="/progress",
@@ -100,7 +99,7 @@ def start_learning_session(
     session = LearningSession(
         student_id=student.id,
         lesson_id=request.lesson_id,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
 
     db.add(session)
@@ -153,7 +152,7 @@ def complete_learning_session(
             detail="Learning session already completed",
         )
 
-    completed_at = datetime.now(timezone.utc)
+    completed_at = datetime.now(UTC)
 
     session.completed_at = completed_at
 
@@ -252,7 +251,7 @@ def create_engagement_event(
         event_type=request.event_type,
         lesson_id=request.lesson_id,
         duration_seconds=request.duration_seconds,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     db.add(event)
@@ -356,7 +355,7 @@ def update_topic_mastery(
     if mastery:
         mastery.mastery_score = request.mastery_score
         mastery.confidence = request.confidence
-        mastery.updated_at = datetime.now(timezone.utc)
+        mastery.updated_at = datetime.now(UTC)
 
     else:
         mastery = StudentTopicMastery(
@@ -364,7 +363,7 @@ def update_topic_mastery(
             topic_id=request.topic_id,
             mastery_score=request.mastery_score,
             confidence=request.confidence,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
 
         db.add(mastery)

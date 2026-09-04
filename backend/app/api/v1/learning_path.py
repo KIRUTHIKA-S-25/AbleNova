@@ -6,15 +6,14 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user, require_role
 from app.db.database import get_db
 from app.db.models.learning_path import LearningPathItem
-from app.db.models.student import Student
 from app.db.models.lesson import Lesson
+from app.db.models.student import Student
 from app.db.models.user import User
 from app.schemas.learning_path import (
     LearningPathItemCreate,
     LearningPathItemResponse,
     LearningPathStatusUpdate,
 )
-
 
 router = APIRouter(
     prefix="/learning-path",

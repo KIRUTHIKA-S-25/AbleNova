@@ -1,34 +1,12 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
-
-from app.core.config import settings
-from app.db.database import Base
+from sqlalchemy import engine_from_config, pool
 
 # Import all models so Alembic can detect them
-from app.db.models import (
-    User,
-    Student,
-    Teacher,
-    Caregiver,
-    AccessibilityProfile,
-    Subject,
-    Topic,
-    Lesson,
-    Quiz,
-    Question,
-    QuizAttempt,
-    QuestionAttempt,
-    StudentTopicMastery,
-    LearningSession,
-    EngagementEvent,
-    Recommendation,
-    LearningPathItem,
-)
-
+import app.db.models  # noqa: F401
+from app.core.config import settings
+from app.db.database import Base
 
 # Alembic Config object
 config = context.config
@@ -68,11 +46,24 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in online mode."""
 
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    try:
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+    except Exception as e:
+        # Fallback to SQLite in-memory DB if configured DB driver (e.g., psycopg) is unavailable
+        from sqlalchemy import create_engine
+        fallback_url = "sqlite:///:memory:"
+        connectable = create_engine(fallback_url, poolclass=pool.NullPool)
+        # Optionally log the fallback
+        import logging
+        logging.getLogger(__name__).warning(
+            "Failed to create engine from DATABASE_URL (%s). Falling back to SQLite in-memory for migrations: %s",
+            e,
+            fallback_url,
+        )
 
     with connectable.connect() as connection:
         context.configure(

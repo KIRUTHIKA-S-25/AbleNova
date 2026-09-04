@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -6,16 +6,15 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, require_role
 from app.db.database import get_db
+from app.db.models.lesson import Lesson
 from app.db.models.recommendation import Recommendation
 from app.db.models.student import Student
-from app.db.models.lesson import Lesson
 from app.db.models.user import User
 from app.schemas.recommendation import (
     RecommendationCreate,
     RecommendationResponse,
     RecommendationStatusUpdate,
 )
-
 
 router = APIRouter(
     prefix="/recommendations",
@@ -163,7 +162,7 @@ def create_recommendation(
         difficulty=recommendation_data.difficulty,
         estimated_minutes=recommendation_data.estimated_minutes,
         status="pending",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     db.add(recommendation)

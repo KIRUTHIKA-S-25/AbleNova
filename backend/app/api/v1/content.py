@@ -1,19 +1,77 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_role
 from app.db.database import get_db
-from app.db.models.subject import Subject
-from app.db.models.topic import Topic
 from app.db.models.lesson import Lesson
 from app.db.models.quiz import Quiz
-
+from app.db.models.subject import Subject
+from app.db.models.teacher import Teacher
+from app.db.models.topic import Topic
+from app.db.models.user import User
+from app.services.content_service import process_uploaded_document
 
 router = APIRouter(
     prefix="/content",
-    tags=["Content Aggregation"],
+    tags=["Content Ingestion & Aggregation"],
 )
+
+
+# ============================================================
+# CONTENT UPLOAD (POST /content/upload - API Contract Section 14)
+# ============================================================
+@router.post(
+    "/upload",
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload educational file (PDF, DOCX, TXT) for processing and chunking",
+)
+async def upload_content_document(
+    file: UploadFile = File(...),
+    subject_id: UUID | None = Form(None),
+    topic_id: UUID | None = Form(None),
+    grade: int | None = Form(None),
+    language: str = Form("en"),
+    difficulty: str = Form("beginner"),
+    current_user: User = Depends(require_role("teacher")),
+    db: Session = Depends(get_db),
+):
+    teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+    if not teacher:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Teacher profile not found",
+        )
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty",
+        )
+
+    doc = process_uploaded_document(
+        teacher_id=teacher.id,
+        file_name=file.filename or "uploaded_file",
+        file_bytes=file_bytes,
+        subject_id=subject_id,
+        topic_id=topic_id,
+        grade=grade,
+        language=language,
+        difficulty=difficulty,
+        db=db,
+    )
+
+    return {
+        "document_id": doc.id,
+        "file_name": doc.file_name,
+        "storage_path": doc.storage_path,
+        "status": doc.status,
+        "chunks_count": len(doc.chunks),
+        "created_at": doc.created_at.isoformat() if doc.created_at else None,
+    }
+
 
 
 @router.get(

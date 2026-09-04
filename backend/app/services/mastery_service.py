@@ -65,19 +65,17 @@ We have the following verified data per topic:
   avoids any external APIs or randomness.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.db.models.mastery import StudentTopicMastery
-from app.db.models.quiz_attempt import QuizAttempt
-from app.db.models.question_attempt import QuestionAttempt
-from app.db.models.question import Question
-from app.db.models.quiz import Quiz
 from app.db.models.lesson import Lesson
-
+from app.db.models.mastery import StudentTopicMastery
+from app.db.models.question import Question
+from app.db.models.question_attempt import QuestionAttempt
+from app.db.models.quiz import Quiz
+from app.db.models.quiz_attempt import QuizAttempt
 
 # ----------------------------------------------------------------
 # Constants
@@ -117,7 +115,7 @@ def _compute_attempt_accuracy(question_attempts: list[QuestionAttempt]) -> float
     weighted_total: float = 0.0
 
     for qa in question_attempts:
-        question: Optional[Question] = qa.question  # loaded via relationship
+        question: Question | None = qa.question  # loaded via relationship
         if question is None:
             continue
         w = _difficulty_weight(question.difficulty)
@@ -174,17 +172,7 @@ def calculate_topic_mastery(
     if not topic_quiz_ids:
         return 0.0, 0.0
 
-    # Step 2: Get all quiz attempts for this student on topic quizzes,
-    # ordered by creation time ascending (oldest first → recency weighting)
-    attempts = (
-        db.query(QuizAttempt)
-        .filter(
-            QuizAttempt.student_id == student_id,
-            QuizAttempt.quiz_id.in_(topic_quiz_ids),
-        )
-        .order_by(QuizAttempt.created_at.asc())
-        .all()
-    )
+
 
     # Also consider granular per-topic questions across any quiz attempt.
     # We use the question's direct topic_id to filter relevant question attempts.
@@ -289,7 +277,7 @@ def update_topic_mastery_after_quiz(
         .first()
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if mastery_record:
         mastery_record.mastery_score = mastery_score

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -11,13 +11,12 @@ from app.core.config import settings
 from app.db.database import get_db
 from app.db.models.user import User
 
-
 # ============================================================
 # PASSWORD HASHING
 # ============================================================
 
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
+    schemes=["sha256_crypt"],
     deprecated="auto",
 )
 
@@ -40,7 +39,7 @@ def verify_password(
 # HTTP BEARER SECURITY
 # ============================================================
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 # ============================================================
@@ -53,7 +52,7 @@ def create_access_token(
 ) -> str:
     to_encode = data.copy()
 
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=expires_minutes
     )
 
@@ -96,6 +95,14 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
+
+    # If no credentials provided, raise 401 Unauthorized
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Get token from Authorization header
     token = credentials.credentials
