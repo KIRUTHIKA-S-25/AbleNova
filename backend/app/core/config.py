@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "dev-secret-key-change-in-production-ablenova"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    AUTH_MAX_FAILED_LOGIN_ATTEMPTS: int = 5
+    AUTH_LOCKOUT_MINUTES: int = 15
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [

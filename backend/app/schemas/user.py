@@ -17,6 +17,12 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=6, max_length=128)
 
 
+class UserLogin(BaseSchema):
+    """Schema for user login credentials."""
+    email: EmailStr
+    password: str = Field(..., min_length=1)
+
+
 class UserUpdate(BaseSchema):
     """Schema for updating user details."""
     email: Optional[EmailStr] = None
@@ -35,7 +41,19 @@ class TokenResponse(BaseSchema):
     """Authentication token response adhering to API_CONTRACT.md Section 2."""
     access_token: str
     token_type: str = "bearer"
+    refresh_token: Optional[str] = None
     user: UserRead
+
+
+class TokenRefreshRequest(BaseSchema):
+    """Request payload for rotating/refreshing access token."""
+    refresh_token: str = Field(..., min_length=1)
+
+
+class TokenRefreshResponse(BaseSchema):
+    """Token refresh response."""
+    access_token: str
+    token_type: str = "bearer"
 
 
 class TeacherRead(BaseSchema):
