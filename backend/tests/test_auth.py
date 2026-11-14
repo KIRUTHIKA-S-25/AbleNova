@@ -108,7 +108,7 @@ async def test_password_hash_stored_not_plaintext(async_client: AsyncClient):
         "name": "Hash Check",
         "email": email,
         "password": raw_password,
-        "role": "teacher",
+        "role": "student",
     }
     response = await async_client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 201
@@ -127,7 +127,7 @@ async def test_login_success(async_client: AsyncClient):
     """Verify successful authentication and token issuance."""
     email = f"login_{uuid.uuid4().hex[:8]}@example.com"
     pwd = "LoginPassword456"
-    reg_payload = {"name": "Login User", "email": email, "password": pwd, "role": "caregiver"}
+    reg_payload = {"name": "Login User", "email": email, "password": pwd, "role": "student"}
     await async_client.post("/api/v1/auth/register", json=reg_payload)
 
     login_res = await async_client.post("/api/v1/auth/login", json={"email": email, "password": pwd})
@@ -237,3 +237,4 @@ async def test_logout_endpoint(async_client: AsyncClient):
     res = await async_client.post("/api/v1/auth/logout", headers=headers)
     assert res.status_code == 200
     assert "logged out" in res.json()["message"].lower()
+

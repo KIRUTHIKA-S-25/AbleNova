@@ -1,7 +1,8 @@
 import logging
 import uuid
-from typing import Any, Dict
-from fastapi import APIRouter, Depends, status
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,13 +13,17 @@ from app.core.security import (
     create_refresh_token,
     decode_refresh_token,
     get_password_hash,
-    is_account_locked,
-    record_failed_login,
-    reset_failed_logins,
+    hash_token,
+    is_login_rate_limited,
+    record_failed_login_attempt,
+    reset_failed_login_attempts,
+    revoke_all_user_refresh_tokens,
+    revoke_refresh_token_by_hash,
+    store_refresh_token,
     verify_password,
 )
 from app.db.database import get_db
-from app.db.models import AccessibilityProfile, Caregiver, Student, Teacher, User
+from app.db.models import AccessibilityProfile, RefreshToken, Student, User
 from app.schemas.common import UserRole
 from app.schemas.user import (
     TokenRefreshRequest,
@@ -38,18 +43,30 @@ router = APIRouter(tags=["Authentication"])
     "/auth/register",
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a new user account",
+    summary="Register a new student account",
 )
 async def register(
     user_in: UserCreate,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Creates a new user account, initializes the role-specific profile,
-    and returns initial access & refresh tokens.
+    """Creates a new student user account and default accessibility profile.
+    
+    Security Hardening:
+    - Public registration is strictly restricted to the least-privileged role (student).
+    - Any attempt to self-provision teacher, caregiver, or administrator roles is rejected.
+    - Role is hardcoded on creation to prevent client-side privilege escalation.
     """
     clean_email = user_in.email.lower().strip()
 
-    # Check for existing account to prevent duplicate registration
+    # Reject role escalation attempts
+    if user_in.role and user_in.role != UserRole.STUDENT:
+        raise AppException(
+            code="ROLE_NOT_PERMITTED",
+            message="Public registration is restricted to student accounts. Teacher, caregiver, and administrator roles require administrative provisioning.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Check for existing account
     existing_user = db.execute(select(User).where(User.email == clean_email)).scalar_one_or_none()
     if existing_user:
         raise AppException(
@@ -61,49 +78,40 @@ async def register(
     # Hash password securely
     hashed_pwd = get_password_hash(user_in.password)
 
-    # Create User record
-    role_str = user_in.role.value if isinstance(user_in.role, UserRole) else str(user_in.role)
+    # Create User record: strictly enforce STUDENT role
     new_user = User(
         id=uuid.uuid4(),
         email=clean_email,
         name=user_in.name.strip(),
-        role=role_str,
+        role=UserRole.STUDENT.value,
         password_hash=hashed_pwd,
     )
     db.add(new_user)
     db.flush()
 
-    # Initialize domain profile based on selected role
-    if role_str == UserRole.STUDENT.value:
-        student = Student(
-            id=uuid.uuid4(),
-            user_id=new_user.id,
-            age=10,  # Default starter age, editable via student profile
-            grade=5,  # Default starter grade
-            preferred_language="en",
-        )
-        db.add(student)
-        db.flush()
-        # Initialize default privacy-preserving accessibility profile
-        acc_profile = AccessibilityProfile(
-            student_id=student.id,
-            text_enabled=True,
-            audio_enabled=False,
-            captions_enabled=False,
-            simplified_content=False,
-            large_text=False,
-            high_contrast=False,
-            reduced_motion=False,
-            keyboard_navigation=True,
-        )
-        db.add(acc_profile)
-    elif role_str == UserRole.TEACHER.value:
-        teacher = Teacher(id=uuid.uuid4(), user_id=new_user.id)
-        db.add(teacher)
-    elif role_str == UserRole.CAREGIVER.value:
-        caregiver = Caregiver(id=uuid.uuid4(), user_id=new_user.id)
-        db.add(caregiver)
+    # Provision student profile and default privacy-preserving accessibility profile
+    student = Student(
+        id=uuid.uuid4(),
+        user_id=new_user.id,
+        age=10,
+        grade=5,
+        preferred_language="en",
+    )
+    db.add(student)
+    db.flush()
 
+    acc_profile = AccessibilityProfile(
+        student_id=student.id,
+        text_enabled=True,
+        audio_enabled=False,
+        captions_enabled=False,
+        simplified_content=False,
+        large_text=False,
+        high_contrast=False,
+        reduced_motion=False,
+        keyboard_navigation=True,
+    )
+    db.add(acc_profile)
     db.commit()
     db.refresh(new_user)
 
@@ -113,6 +121,9 @@ async def register(
         extra_claims={"role": new_user.role},
     )
     refresh_token = create_refresh_token(subject=str(new_user.id))
+    refresh_payload = decode_refresh_token(refresh_token)
+    if refresh_payload:
+        store_refresh_token(db, new_user.id, refresh_token, refresh_payload)
 
     return TokenResponse(
         access_token=access_token,
@@ -130,15 +141,15 @@ async def register(
 )
 async def login(
     login_data: UserLogin,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    """Authenticates credentials, guards against brute-force attacks,
-    and returns access & refresh tokens.
-    """
+    """Authenticates credentials using database-backed rate limiting and issues tokens."""
     clean_email = login_data.email.lower().strip()
+    client_ip = request.client.host if request.client else None
 
-    # Check brute-force lockout
-    if is_account_locked(clean_email):
+    # Check database-backed rate limiting across all workers
+    if is_login_rate_limited(db, clean_email):
         raise AppException(
             code="FORBIDDEN",
             message="Account temporarily locked due to excessive failed attempts. Please try again later.",
@@ -149,21 +160,24 @@ async def login(
 
     # Generic error message to prevent user enumeration
     if not user or not verify_password(login_data.password, user.password_hash):
-        record_failed_login(clean_email)
+        record_failed_login_attempt(db, clean_email, ip_address=client_ip)
         raise AppException(
             code="UNAUTHORIZED",
             message="Invalid email or password.",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    # Reset failed attempts upon successful login
-    reset_failed_logins(clean_email)
+    # Clear failed attempts upon successful login
+    reset_failed_login_attempts(db, clean_email)
 
     access_token = create_access_token(
         subject=str(user.id),
         extra_claims={"role": user.role},
     )
     refresh_token = create_refresh_token(subject=str(user.id))
+    refresh_payload = decode_refresh_token(refresh_token)
+    if refresh_payload:
+        store_refresh_token(db, user.id, refresh_token, refresh_payload)
 
     return TokenResponse(
         access_token=access_token,
@@ -197,14 +211,17 @@ async def get_current_authenticated_user(
     "/auth/refresh",
     response_model=TokenRefreshResponse,
     status_code=status.HTTP_200_OK,
-    summary="Refresh access token using refresh token",
+    summary="Refresh access token using refresh token with rotation and revocation",
 )
 async def refresh_token(
     refresh_in: TokenRefreshRequest,
     db: Session = Depends(get_db),
 ) -> TokenRefreshResponse:
-    """Rotates access token using a valid, non-expired refresh token."""
-    payload = decode_refresh_token(refresh_in.refresh_token)
+    """Rotates refresh token and returns a new access token and rotated refresh token.
+    Detects reuse of previously rotated or revoked tokens and revokes the entire token family.
+    """
+    raw_token = refresh_in.refresh_token
+    payload = decode_refresh_token(raw_token)
     if not payload:
         raise AppException(
             code="UNAUTHORIZED",
@@ -229,6 +246,48 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
+    # Lookup persistent token record by hash
+    token_h = hash_token(raw_token)
+    token_record = db.execute(
+        select(RefreshToken).where(RefreshToken.token_hash == token_h)
+    ).scalar_one_or_none()
+
+    if not token_record:
+        raise AppException(
+            code="UNAUTHORIZED",
+            message="Refresh token not recognized or already revoked.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # Detect token reuse
+    if token_record.revoked:
+        logger.warning(
+            "Security alert: Revoked refresh token presented for user %s. Revoking all active sessions.",
+            user_id,
+        )
+        revoke_all_user_refresh_tokens(db, user_id)
+        raise AppException(
+            code="UNAUTHORIZED",
+            message="Refresh token has been revoked. Token reuse detected.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # Verify expiration
+    now = datetime.now(timezone.utc)
+    expires_at = token_record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if expires_at < now:
+        token_record.revoked = True
+        token_record.revoked_at = now
+        db.commit()
+        raise AppException(
+            code="UNAUTHORIZED",
+            message="Refresh token has expired.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
     user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
     if not user:
         raise AppException(
@@ -237,24 +296,45 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
+    # Rotate token: revoke current token
+    token_record.revoked = True
+    token_record.revoked_at = now
+
+    # Issue new access token and rotated refresh token
     new_access_token = create_access_token(
         subject=str(user.id),
         extra_claims={"role": user.role},
     )
+    new_refresh_token = create_refresh_token(subject=str(user.id))
+    new_payload = decode_refresh_token(new_refresh_token)
+    if new_payload:
+        store_refresh_token(db, user.id, new_refresh_token, new_payload)
+
+    db.commit()
 
     return TokenRefreshResponse(
         access_token=new_access_token,
         token_type="bearer",
+        refresh_token=new_refresh_token,
     )
 
 
 @router.post(
     "/auth/logout",
     status_code=status.HTTP_200_OK,
-    summary="Logout current user",
+    summary="Logout current user and revoke refresh tokens",
 )
 async def logout(
+    logout_data: Optional[TokenRefreshRequest] = None,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> Dict[str, str]:
-    """Concludes session for the authenticated user."""
-    return {"message": "Logged out successfully."}
+    """Revokes active refresh tokens and concludes session for the authenticated user."""
+    if logout_data and logout_data.refresh_token:
+        token_h = hash_token(logout_data.refresh_token)
+        revoke_refresh_token_by_hash(db, token_h)
+
+    # Revoke all active refresh tokens for the user to guarantee complete session termination
+    revoke_all_user_refresh_tokens(db, current_user.id)
+
+    return {"message": "Logged out successfully. Refresh tokens revoked."}

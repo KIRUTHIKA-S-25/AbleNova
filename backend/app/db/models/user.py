@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 from app.db.models.base import GUID, TimestampMixin
@@ -20,6 +20,7 @@ class User(Base, TimestampMixin):
     student = relationship("Student", back_populates="user", uselist=False, cascade="all, delete-orphan")
     teacher = relationship("Teacher", back_populates="user", uselist=False, cascade="all, delete-orphan")
     caregiver = relationship("Caregiver", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Teacher(Base):
@@ -85,4 +86,42 @@ class CaregiverStudent(Base):
         default=lambda: datetime.now(timezone.utc),
         server_default=func.now(),
         nullable=False,
+    )
+
+
+class RefreshToken(Base):
+    """Persistent storage for refresh tokens with rotation and revocation support."""
+    __tablename__ = "refresh_tokens"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(255), unique=True, index=True, nullable=False)
+    jti = Column(String(255), unique=True, index=True, nullable=False)
+    revoked = Column(Boolean, default=False, nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    user = relationship("User", back_populates="refresh_tokens")
+
+
+class FailedLoginAttempt(Base):
+    """Tracks failed authentication attempts for persistent rate limiting across workers."""
+    __tablename__ = "failed_login_attempts"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    identifier = Column(String(255), index=True, nullable=False)
+    ip_address = Column(String(45), nullable=True)
+    attempted_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
     )

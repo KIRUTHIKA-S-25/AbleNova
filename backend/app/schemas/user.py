@@ -51,9 +51,10 @@ class TokenRefreshRequest(BaseSchema):
 
 
 class TokenRefreshResponse(BaseSchema):
-    """Token refresh response."""
+    """Token refresh response adhering to refresh-token rotation."""
     access_token: str
     token_type: str = "bearer"
+    refresh_token: Optional[str] = None
 
 
 class TeacherRead(BaseSchema):

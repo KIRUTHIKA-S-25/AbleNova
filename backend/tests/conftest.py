@@ -9,7 +9,16 @@ backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+from app.db.database import Base, engine
+import app.db.models  # noqa: F401
 from app.main import app
+
+
+@pytest.fixture(autouse=True, scope="session")
+def setup_test_database():
+    """Ensure all registered models exist in test database prior to test execution."""
+    Base.metadata.create_all(bind=engine)
+    yield
 
 
 @pytest.fixture

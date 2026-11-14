@@ -1,5 +1,13 @@
 from app.db.models.base import GUID, TimestampMixin, VectorType
-from app.db.models.user import Caregiver, CaregiverStudent, Teacher, TeacherStudent, User
+from app.db.models.user import (
+    Caregiver,
+    CaregiverStudent,
+    FailedLoginAttempt,
+    RefreshToken,
+    Teacher,
+    TeacherStudent,
+    User,
+)
 from app.db.models.student import AccessibilityProfile, Student
 from app.db.models.curriculum import Lesson, Subject, Topic
 from app.db.models.quiz import Question, QuestionAttempt, Quiz, QuizAttempt
@@ -37,4 +45,6 @@ __all__ = [
     "LearningPathItem",
     "ContentDocument",
     "ContentChunk",
+    "RefreshToken",
+    "FailedLoginAttempt",
 ]

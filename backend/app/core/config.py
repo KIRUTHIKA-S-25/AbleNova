@@ -1,6 +1,6 @@
 import logging
 from typing import List, Union
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # Security & Auth
     JWT_SECRET: str = "dev-secret-key-change-in-production-ablenova"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # Safer production default (configurable via env var)
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     AUTH_MAX_FAILED_LOGIN_ATTEMPTS: int = 5
     AUTH_LOCKOUT_MINUTES: int = 15
@@ -40,6 +40,27 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        env = (self.ENVIRONMENT or "").lower().strip()
+        if env == "production":
+            insecure_defaults = {
+                "dev-secret-key-change-in-production-ablenova",
+                "secret",
+                "changeme",
+                "jwt-secret",
+                "secretkey",
+            }
+            if not self.JWT_SECRET or self.JWT_SECRET.strip() in insecure_defaults:
+                raise ValueError(
+                    "Production environment detected: JWT_SECRET must be set to a secure, non-default secret."
+                )
+            if len(self.JWT_SECRET.strip()) < 32:
+                raise ValueError(
+                    "Production environment detected: JWT_SECRET must be at least 32 characters long."
+                )
+        return self
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

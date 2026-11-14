@@ -117,8 +117,9 @@ def test_role_based_authorization_checks():
 def test_student_data_protection_student_self_access():
     """Verify students can access only their own records, not other students."""
     with SessionLocal() as db:
-        user_a = User(id=uuid.uuid4(), email="sa@test.org", name="Student A", role="student", password_hash="h")
-        user_b = User(id=uuid.uuid4(), email="sb@test.org", name="Student B", role="student", password_hash="h")
+        uid = uuid.uuid4().hex[:8]
+        user_a = User(id=uuid.uuid4(), email=f"sa_{uid}@test.org", name="Student A", role="student", password_hash="h")
+        user_b = User(id=uuid.uuid4(), email=f"sb_{uid}@test.org", name="Student B", role="student", password_hash="h")
         db.add_all([user_a, user_b])
         db.flush()
 
@@ -142,9 +143,10 @@ def test_student_data_protection_student_self_access():
 def test_student_data_protection_teacher_access():
     """Verify teachers can access ONLY linked students, never unlinked students."""
     with SessionLocal() as db:
-        teacher_u = User(id=uuid.uuid4(), email="teach_auth@test.org", name="T Auth", role="teacher", password_hash="h")
-        student_u1 = User(id=uuid.uuid4(), email="st1@test.org", name="St 1", role="student", password_hash="h")
-        student_u2 = User(id=uuid.uuid4(), email="st2@test.org", name="St 2", role="student", password_hash="h")
+        uid = uuid.uuid4().hex[:8]
+        teacher_u = User(id=uuid.uuid4(), email=f"teach_{uid}@test.org", name="T Auth", role="teacher", password_hash="h")
+        student_u1 = User(id=uuid.uuid4(), email=f"st1_{uid}@test.org", name="St 1", role="student", password_hash="h")
+        student_u2 = User(id=uuid.uuid4(), email=f"st2_{uid}@test.org", name="St 2", role="student", password_hash="h")
         db.add_all([teacher_u, student_u1, student_u2])
         db.flush()
 
@@ -177,9 +179,10 @@ def test_student_data_protection_teacher_access():
 def test_student_data_protection_caregiver_access():
     """Verify caregivers can access ONLY linked students, never unlinked students."""
     with SessionLocal() as db:
-        caregiver_u = User(id=uuid.uuid4(), email="care_auth@test.org", name="C Auth", role="caregiver", password_hash="h")
-        student_u1 = User(id=uuid.uuid4(), email="st_care1@test.org", name="St Care 1", role="student", password_hash="h")
-        student_u2 = User(id=uuid.uuid4(), email="st_care2@test.org", name="St Care 2", role="student", password_hash="h")
+        uid = uuid.uuid4().hex[:8]
+        caregiver_u = User(id=uuid.uuid4(), email=f"care_{uid}@test.org", name="C Auth", role="caregiver", password_hash="h")
+        student_u1 = User(id=uuid.uuid4(), email=f"st_care1_{uid}@test.org", name="St Care 1", role="student", password_hash="h")
+        student_u2 = User(id=uuid.uuid4(), email=f"st_care2_{uid}@test.org", name="St Care 2", role="student", password_hash="h")
         db.add_all([caregiver_u, student_u1, student_u2])
         db.flush()
 
@@ -211,7 +214,8 @@ def test_student_data_protection_caregiver_access():
 def test_student_data_protection_nonexistent_student():
     """Verify requesting non-existent student returns 404."""
     with SessionLocal() as db:
-        user = User(id=uuid.uuid4(), email="random@test.org", name="Random", role="admin", password_hash="h")
+        uid = uuid.uuid4().hex[:8]
+        user = User(id=uuid.uuid4(), email=f"random_{uid}@test.org", name="Random", role="admin", password_hash="h")
         db.add(user)
         db.commit()
 
@@ -220,3 +224,4 @@ def test_student_data_protection_nonexistent_student():
             verify_student_access(non_existent_id, user, db)
         assert exc.value.status_code == 404
         assert exc.value.code == "NOT_FOUND"
+

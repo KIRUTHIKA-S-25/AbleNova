@@ -194,7 +194,8 @@ def test_alembic_configuration_and_revisions():
     assert len(heads) > 0
     revisions = [r.revision for r in script.walk_revisions()]
     assert "0001_setup_extensions" in revisions
-    assert heads[0] == "8c12c5387ad5"
+    assert "8c12c5387ad5" in revisions
+    assert heads[0] == "d4e5f6a7b8c9"
 
     # Check Base metadata exists for autogenerate
     assert hasattr(Base, "metadata")

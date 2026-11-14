@@ -187,3 +187,4 @@ def verify_student_access(
         message="Access denied for this role",
         status_code=status.HTTP_403_FORBIDDEN,
     )
+
