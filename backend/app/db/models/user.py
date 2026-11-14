@@ -40,6 +40,7 @@ class Teacher(Base):
     user = relationship("User", back_populates="teacher")
     students = relationship("Student", secondary="teacher_students", back_populates="teachers")
     content_documents = relationship("ContentDocument", back_populates="teacher", cascade="all, delete-orphan")
+    lessons = relationship("Lesson", back_populates="created_by_teacher")
 
 
 class Caregiver(Base):

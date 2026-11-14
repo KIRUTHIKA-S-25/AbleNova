@@ -69,6 +69,29 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Dependency that extracts and validates the Bearer token if present,
+    returning the User, or None if no token is provided or invalid.
+    """
+    if not credentials:
+        return None
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if not payload:
+        return None
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        return None
+    try:
+        user_id = UUID(user_id_str)
+    except (ValueError, TypeError):
+        return None
+    return db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+
+
 def require_roles(*allowed_roles: Union[UserRole, str]) -> Callable:
     """Dependency factory enforcing role-based authorization.
     Verifies that the authenticated user possesses one of the designated roles.

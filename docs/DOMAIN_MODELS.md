@@ -82,24 +82,53 @@ subjects (id, name, description)
    - `id`: UUID (Primary Key)
    - `name`: String(255) (Unique, Indexed)
    - `description`: Text
+   - `grade_level_min`: Integer (Default 1)
+   - `grade_level_max`: Integer (Default 12)
+   - `is_active`: Boolean (Default True, Indexed)
+   - `language`: String(10) (Default `"en"`)
 9. **Topic (`topics`)**:
    - `id`: UUID (Primary Key)
    - `subject_id`: UUID (Foreign Key `subjects.id`, Indexed, Cascade delete)
    - `name`: String(255)
+   - `description`: Text
    - `difficulty`: String(50) (`beginner`, `intermediate`, `advanced`)
    - `order_index`: Integer
+   - `grade_level`: Integer (Default 5)
+   - `is_active`: Boolean (Default True, Indexed)
+   - `prerequisite_topic_id`: UUID (Foreign Key `topics.id`, Set NULL on delete, Self-referential prerequisite tracking)
 10. **Lesson (`lessons`)**:
     - `id`: UUID (Primary Key)
     - `topic_id`: UUID (Foreign Key `topics.id`, Indexed, Cascade delete)
     - `title`: String(255)
+    - `description`: Text
     - `difficulty`: String(50)
     - `language`: String(10)
     - `estimated_minutes`: Integer
+    - `grade_level`: Integer (Default 5)
+    - `is_published`: Boolean (Default True, Indexed)
     - `standard_content`: Text (standard educational tier)
     - `simplified_content`: Text (cognitive accessibility tier)
     - `audio_url`: String(1024) (optional audio narration)
     - `caption_text`: Text (optional caption transcripts)
+    - `accessibility_metadata`: JSON (disability-friendly learning metadata)
+    - `created_by_teacher_id`: UUID (Foreign Key `teachers.id`, Set NULL on delete)
     - `source_document_id`: UUID (Foreign Key `content_documents.id`, Set NULL on delete)
+11. **LearningObjective (`learning_objectives`)**:
+    - `id`: UUID (Primary Key)
+    - `lesson_id`: UUID (Foreign Key `lessons.id`, Indexed, Cascade delete)
+    - `description`: Text (measurable learning goal)
+    - `order_index`: Integer
+    - `created_at`: DateTime(timezone=True)
+12. **LessonResource (`lesson_resources`)**:
+    - `id`: UUID (Primary Key)
+    - `lesson_id`: UUID (Foreign Key `lessons.id`, Indexed, Cascade delete)
+    - `title`: String(255)
+    - `resource_type`: String(50) (e.g. `document`, `image`, `audio`, `video`, `worksheet`, `link`)
+    - `url`: String(1024) (metadata reference to storage/CDN; no binary in DB)
+    - `file_size_bytes`: Integer (optional)
+    - `format`: String(50) (e.g. `pdf`, `mp3`, `mp4`, `png`)
+    - `accessibility_description`: Text (alt-text, transcript, audio description)
+    - `created_at`: DateTime(timezone=True)
 
 ### C. Quizzes & Question Evaluation (`app/db/models/quiz.py`)
 11. **Quiz (`quizzes`)**:

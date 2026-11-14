@@ -14,6 +14,11 @@ from app.schemas.student import (
     StudentProfileResponse,
     StudentUpdate,
 )
+from app.schemas.curriculum import (
+    StudentCurriculumNextResponse,
+    StudentCurriculumResponse,
+)
+from app.services.curriculum_service import CurriculumService
 from app.services.student_service import StudentService
 
 logger = logging.getLogger("ablenova.api.students")
@@ -248,6 +253,92 @@ async def update_student_accessibility_by_id(
 
     student = verify_student_access(student_id, current_user, db)
     return StudentService.update_accessibility(db, student, update_data)
+
+
+# ==============================================================================
+# Student Personalized Curriculum Endpoints (Phase 7)
+# ==============================================================================
+
+@router.get(
+    "/student/curriculum",
+    response_model=StudentCurriculumResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get current student's personalized curriculum",
+)
+@router.get(
+    "/students/curriculum",
+    response_model=StudentCurriculumResponse,
+    include_in_schema=False,
+)
+async def get_my_curriculum(
+    current_user: User = Depends(require_student),
+    db: Session = Depends(get_db),
+) -> StudentCurriculumResponse:
+    """Retrieves personalized, disability-friendly curriculum for the authenticated student."""
+    student = StudentService.get_student_by_user_id(db, current_user.id)
+    return CurriculumService.get_student_curriculum(db, student.id)
+
+
+@router.get(
+    "/student/curriculum/next",
+    response_model=StudentCurriculumNextResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get next recommended topic and lesson for current student",
+)
+@router.get(
+    "/students/curriculum/next",
+    response_model=StudentCurriculumNextResponse,
+    include_in_schema=False,
+)
+async def get_my_next_curriculum(
+    current_user: User = Depends(require_student),
+    db: Session = Depends(get_db),
+) -> StudentCurriculumNextResponse:
+    """Retrieves next recommended topic and lesson in deterministic progression sequence."""
+    student = StudentService.get_student_by_user_id(db, current_user.id)
+    return CurriculumService.get_student_curriculum_next(db, student.id)
+
+
+@router.get(
+    "/students/{student_id}/curriculum",
+    response_model=StudentCurriculumResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get personalized curriculum for a student (Authorized Teachers / Caregivers / Admin)",
+)
+@router.get(
+    "/student/{student_id}/curriculum",
+    response_model=StudentCurriculumResponse,
+    include_in_schema=False,
+)
+async def get_student_curriculum_by_id(
+    student_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudentCurriculumResponse:
+    """Retrieves student curriculum. Enforces verified teacher/caregiver relationship."""
+    student = verify_student_access(student_id, current_user, db)
+    return CurriculumService.get_student_curriculum(db, student.id)
+
+
+@router.get(
+    "/students/{student_id}/curriculum/next",
+    response_model=StudentCurriculumNextResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get next progression step for a student (Authorized Teachers / Caregivers / Admin)",
+)
+@router.get(
+    "/student/{student_id}/curriculum/next",
+    response_model=StudentCurriculumNextResponse,
+    include_in_schema=False,
+)
+async def get_student_curriculum_next_by_id(
+    student_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudentCurriculumNextResponse:
+    """Retrieves next progression topic/lesson for student. Enforces verified relationship."""
+    student = verify_student_access(student_id, current_user, db)
+    return CurriculumService.get_student_curriculum_next(db, student.id)
 
 
 # ==============================================================================

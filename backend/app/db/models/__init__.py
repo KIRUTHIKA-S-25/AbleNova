@@ -9,7 +9,13 @@ from app.db.models.user import (
     User,
 )
 from app.db.models.student import AccessibilityProfile, Student
-from app.db.models.curriculum import Lesson, Subject, Topic
+from app.db.models.curriculum import (
+    LearningObjective,
+    Lesson,
+    LessonResource,
+    Subject,
+    Topic,
+)
 from app.db.models.quiz import Question, QuestionAttempt, Quiz, QuizAttempt
 from app.db.models.progress import (
     EngagementEvent,
@@ -34,6 +40,8 @@ __all__ = [
     "Subject",
     "Topic",
     "Lesson",
+    "LearningObjective",
+    "LessonResource",
     "Quiz",
     "Question",
     "QuizAttempt",
