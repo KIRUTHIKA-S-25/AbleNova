@@ -49,6 +49,7 @@ class StudentCreate(StudentBase):
 
 
 class StudentUpdate(BaseSchema):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     age: Optional[int] = Field(None, ge=3, le=25)
     grade: Optional[int] = Field(None, ge=1, le=12)
     preferred_language: Optional[str] = Field(None, min_length=2, max_length=10)

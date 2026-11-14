@@ -269,3 +269,4 @@ def test_production_configuration_rejects_insecure_secrets():
         JWT_SECRET="dev-secret-key-change-in-production-ablenova",
     )
     assert dev_settings.ENVIRONMENT == "development"
+
