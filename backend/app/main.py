@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -10,7 +10,7 @@ from app.core.exceptions import (
     http_exception_handler,
     validation_exception_handler,
 )
-from app.db.database import check_db_health
+from app.db.database import get_db_health
 from app.api.v1.api import api_router
 
 
@@ -52,22 +52,34 @@ def create_application() -> FastAPI:
 
     @app.get("/health", tags=["Health"])
     async def health_check():
-        db_alive = check_db_health()
-        return {
-            "status": "healthy" if db_alive else "degraded",
+        db_health = get_db_health()
+        is_healthy = db_health["connected"]
+        response_data = {
+            "status": "healthy" if is_healthy else "degraded",
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
             "environment": settings.ENVIRONMENT,
-            "database": "connected" if db_alive else "disconnected",
+            "database": "connected" if is_healthy else "disconnected",
         }
+        if is_healthy:
+            response_data["database_details"] = {
+                "dialect": db_health["dialect"],
+                "latency_ms": db_health["latency_ms"],
+            }
+        else:
+            response_data["database_details"] = {
+                "error": db_health["error"],
+            }
+        return response_data
 
     @app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
     async def api_v1_health():
-        db_alive = check_db_health()
+        db_health = get_db_health()
+        is_healthy = db_health["connected"]
         return {
-            "status": "healthy" if db_alive else "degraded",
+            "status": "healthy" if is_healthy else "degraded",
             "api_version": "v1",
-            "database": "connected" if db_alive else "disconnected",
+            "database": "connected" if is_healthy else "disconnected",
         }
 
     # Include all v1 API endpoints
