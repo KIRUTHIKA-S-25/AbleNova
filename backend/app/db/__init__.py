@@ -9,6 +9,7 @@ from app.db.database import (
     get_safe_url,
     build_engine_options,
 )
+import app.db.models as models
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "normalize_database_url",
     "get_safe_url",
     "build_engine_options",
+    "models",
 ]

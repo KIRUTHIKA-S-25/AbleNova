@@ -12,6 +12,7 @@ if backend_dir not in sys.path:
 
 from app.core.config import settings
 from app.db.database import Base, build_engine_options, get_safe_url
+import app.db.models  # noqa: F401 - Register all domain models with Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
