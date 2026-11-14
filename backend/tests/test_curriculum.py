@@ -787,10 +787,11 @@ def test_16_database_migration_behavior():
 
     heads = script.get_heads()
     assert len(heads) == 1
-    assert heads[0] == "e5f6a7b8c9d0"
+    assert heads[0] in ["e5f6a7b8c9d0", "f6a7b8c9d0e1"]
 
     revisions = [r.revision for r in script.walk_revisions()]
     assert "0001_setup_extensions" in revisions
     assert "8c12c5387ad5" in revisions
     assert "d4e5f6a7b8c9" in revisions
     assert "e5f6a7b8c9d0" in revisions
+    assert "f6a7b8c9d0e1" in revisions

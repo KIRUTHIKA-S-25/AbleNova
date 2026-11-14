@@ -7,13 +7,17 @@ from app.db.models.base import GUID
 
 
 class Quiz(Base):
-    """Quiz assessment model associated with a lesson."""
+    """Quiz assessment model associated with a lesson and topic."""
     __tablename__ = "quizzes"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     lesson_id = Column(GUID(), ForeignKey("lessons.id", ondelete="CASCADE"), index=True, nullable=False)
+    topic_id = Column(GUID(), ForeignKey("topics.id", ondelete="SET NULL"), index=True, nullable=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    is_published = Column(Boolean, default=False, index=True, nullable=False)
+    passing_threshold = Column(Float, default=0.70, nullable=False)
+    max_attempts = Column(Integer, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -23,7 +27,8 @@ class Quiz(Base):
 
     # Relationships
     lesson = relationship("Lesson", back_populates="quizzes")
-    questions = relationship("Question", back_populates="quiz", cascade="all, delete-orphan")
+    topic = relationship("Topic", backref="quizzes")
+    questions = relationship("Question", back_populates="quiz", cascade="all, delete-orphan", order_by="Question.order_index")
     attempts = relationship("QuizAttempt", back_populates="quiz", cascade="all, delete-orphan")
 
 
@@ -38,12 +43,13 @@ class Question(Base):
     quiz_id = Column(GUID(), ForeignKey("quizzes.id", ondelete="CASCADE"), index=True, nullable=False)
     topic_id = Column(GUID(), ForeignKey("topics.id", ondelete="CASCADE"), index=True, nullable=False)
     question_text = Column(Text, nullable=False)
-    question_type = Column(String(50), default="multiple_choice", nullable=False)
+    question_type = Column(String(50), default="multiple_choice", nullable=False)  # multiple_choice, multiple_select, true_false
     options = Column(JSON, nullable=False)
     correct_answer = Column(String(255), nullable=False)
     explanation = Column(Text, nullable=True)
     difficulty = Column(String(50), default="beginner", nullable=False)
     order_index = Column(Integer, default=0, nullable=False)
+    marks = Column(Integer, default=1, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -67,7 +73,11 @@ class QuizAttempt(Base):
     score = Column(Integer, nullable=False)
     total_questions = Column(Integer, nullable=False)
     accuracy = Column(Float, nullable=False)
+    is_passed = Column(Boolean, default=False, nullable=False)
     time_taken_seconds = Column(Integer, nullable=False)
+    client_submission_id = Column(String(255), index=True, nullable=True)
+    feedback = Column(Text, nullable=True)
+    recommendation_id = Column(GUID(), ForeignKey("recommendations.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -78,6 +88,7 @@ class QuizAttempt(Base):
     # Relationships
     student = relationship("Student", back_populates="quiz_attempts")
     quiz = relationship("Quiz", back_populates="attempts")
+    recommendation = relationship("Recommendation")
     question_attempts = relationship("QuestionAttempt", back_populates="attempt", cascade="all, delete-orphan")
 
 
@@ -90,6 +101,7 @@ class QuestionAttempt(Base):
     question_id = Column(GUID(), ForeignKey("questions.id", ondelete="CASCADE"), index=True, nullable=False)
     student_answer = Column(String(255), nullable=False)
     is_correct = Column(Boolean, nullable=False)
+    marks_obtained = Column(Float, default=0.0, nullable=False)
     time_taken_seconds = Column(Integer, nullable=True)
 
     # Relationships
