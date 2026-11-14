@@ -46,4 +46,6 @@ Thumbs.db
 # Databases
 *.db
 *.sqlite3
+chroma_db/
+backend/chroma_db/
 

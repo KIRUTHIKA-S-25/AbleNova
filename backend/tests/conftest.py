@@ -9,9 +9,10 @@ backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from app.db.database import Base, engine
+from app.db.database import Base, engine, SessionLocal
 import app.db.models  # noqa: F401
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -19,6 +20,20 @@ def setup_test_database():
     """Ensure all registered models exist in test database prior to test execution."""
     Base.metadata.create_all(bind=engine)
     yield
+
+
+@pytest.fixture
+def db_session():
+    """Provide a transactional database session for tests."""
+    with SessionLocal() as session:
+        yield session
+
+
+@pytest.fixture
+def client():
+    """Provide a synchronous TestClient for testing."""
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest.fixture
