@@ -1,11 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AccessibilityProvider } from '@/context/AccessibilityContext';
-import { ScreenReaderAnnouncement } from '@/components/accessibility/ScreenReaderAnnouncement';
-import { Header } from '@/components/common/Header';
-import { Footer } from '@/components/common/Footer';
+import { useAccessibilityStore } from '@/store/useAccessibilityStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,16 +15,15 @@ const queryClient = new QueryClient({
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const { initializeFromStorage } = useAccessibilityStore();
+
+  useEffect(() => {
+    initializeFromStorage();
+  }, [initializeFromStorage]);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <AccessibilityProvider>
-        <ScreenReaderAnnouncement />
-        <Header />
-        <main id="main-content" className="flex-1 w-full">
-          {children}
-        </main>
-        <Footer />
-      </AccessibilityProvider>
+      <AccessibilityProvider>{children}</AccessibilityProvider>
     </QueryClientProvider>
   );
 }

@@ -1,43 +1,140 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  /* AbleNova Centralized Light Design System Tokens */
+  --background: #F6F3EE;
+  --secondary-bg: #FCF9F4;
+  --card-bg: #FFFFFF;
+  --card-border: #ECE9E4;
+  --foreground: #1F2933;
+  --muted-foreground: #6B7280;
+  --muted-text: #8A8F98;
+
+  /* Primary Accent: Dark Emerald */
+  --primary: #044E3A;
+  --primary-hover: #033b2c;
   --primary-foreground: #ffffff;
-  --accent: #f59e0b;
-  --focus-ring: #2563eb;
+
+  /* Pastel Accent Tokens */
+  --pastel-mint: #9FF2DF;
+  --pastel-soft-mint: #D9FAF2;
+  --pastel-cyan: #BFEAF5;
+  --pastel-blue: #DCEFFF;
+  --pastel-lavender: #E5D9FA;
+  --pastel-purple: #F1EAFB;
+  --pastel-yellow: #FFF0B8;
+  --pastel-peach: #FFE5D6;
+
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-foreground: #ffffff;
+
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --success-border: #86efac;
+  --success-foreground: #14532d;
+
+  --warning: #d97706;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-foreground: #78350f;
+
+  --error: #dc2626;
+  --error-bg: #fef2f2;
+  --error-border: #fca5a5;
+  --error-foreground: #7f1d1d;
+
+  --muted: #6b7280;
+  --muted-bg: #f3f4f6;
+
+  --border: #ECE9E4;
+  --focus-ring: #0284c7;
   --text-scale: 1;
 }
 
-/* High Contrast Mode (WCAG AAA standard > 7:1 ratio) */
+/* High Contrast Mode (WCAG AAA standard > 7:1 contrast ratio) */
 html.high-contrast {
   --background: #000000;
   --foreground: #ffffff;
   --card-bg: #000000;
   --card-border: #ffff00;
+
   --primary: #ffff00;
   --primary-hover: #e6e600;
   --primary-foreground: #000000;
-  --accent: #00ffff;
+
+  --secondary: #00ffff;
+  --secondary-hover: #00cccc;
+  --secondary-foreground: #000000;
+
+  --accent: #00ff00;
+  --accent-hover: #00cc00;
+  --accent-foreground: #000000;
+
+  --success: #00ff00;
+  --success-bg: #002b00;
+  --success-border: #00ff00;
+  --success-foreground: #ffffff;
+
+  --warning: #ffaa00;
+  --warning-bg: #332200;
+  --warning-border: #ffaa00;
+  --warning-foreground: #ffffff;
+
+  --error: #ff3333;
+  --error-bg: #330000;
+  --error-border: #ff3333;
+  --error-foreground: #ffffff;
+
+  --muted: #cccccc;
+  --muted-bg: #1a1a1a;
+  --muted-foreground: #ffffff;
+
+  --border: #ffff00;
   --focus-ring: #00ffff;
 }
 
-/* Text Scaling Rules */
+/* Text Scaling Rules for Accessibility */
 html.text-large {
-  font-size: 112.5%; /* 18px base */
+  font-size: 112.5%; /* 18px base font size */
 }
 
 html.text-xlarge {
-  font-size: 125%; /* 20px base */
+  font-size: 125%; /* 20px base font size */
 }
 
-/* Dyslexia Friendly Font Fallback */
+/* Increased Line & Letter Spacing for Reading Assistance */
+html.increased-spacing {
+  letter-spacing: 0.05em;
+  word-spacing: 0.1em;
+}
+html.increased-spacing body {
+  line-height: 1.8;
+}
+
+/* Dyslexia Friendly Font Mode */
 html.font-dyslexic {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'OpenDyslexic', sans-serif !important;
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Chalkboard SE', sans-serif !important;
+}
+
+/* Simplified Visual Mode (Hides non-essential decorative elements) */
+html.simplified-visual .decorative-bg,
+html.simplified-visual .bg-gradient-to-r,
+html.simplified-visual .bg-gradient-to-b,
+html.simplified-visual .glow-effect {
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Larger Touch Targets Accessibility Preference Mode */
+html.large-targets button,
+html.large-targets a,
+html.large-targets input,
+html.large-targets select,
+html.large-targets textarea {
+  min-height: 56px !important;
+  padding-top: 0.875rem !important;
+  padding-bottom: 0.875rem !important;
 }
 
 /* Reduced Motion Override */
@@ -47,36 +144,59 @@ html.reduced-motion *::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Clear Focus Rings for Keyboard Navigation */
 *:focus-visible {
   outline: 4px solid var(--focus-ring) !important;
-  outline-offset: 2px !important;
-  border-radius: 4px;
+  outline-offset: 3px !important;
+  border-radius: 6px;
 }
 
-/* Accessible Utility Classes */
+/* Skip Navigation Link */
 .skip-link {
   position: absolute;
   top: -100px;
   left: 1rem;
   z-index: 100;
-  background: #ffff00;
-  color: #000000;
+  background: var(--primary);
+  color: var(--primary-foreground);
   padding: 0.75rem 1.5rem;
-  font-weight: bold;
+  font-weight: 700;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: top 0.2s ease-in-out;
 }
 
 .skip-link:focus {
   top: 1rem;
 }
 
+/* Legacy glow class stubs (no-op for backward compat) */
+.glow-cyan,
+.glow-mint,
+.glow-lavender {
+  box-shadow: none;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

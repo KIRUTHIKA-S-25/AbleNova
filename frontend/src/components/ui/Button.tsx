@@ -1,23 +1,26 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center font-bold tracking-wide transition-all focus-visible:ring-4 focus-visible:outline-none disabled:opacity-50 disabled:pointer-events-none active:scale-95 shadow-sm rounded-xl cursor-pointer',
+  'inline-flex items-center justify-center font-bold tracking-wide transition-all focus-visible:outline-none disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] rounded-full cursor-pointer select-none',
   {
     variants: {
       variant: {
-        primary: 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-yellow-400 dark:hover:bg-yellow-300 dark:text-black border-2 border-transparent',
-        secondary: 'bg-slate-200 hover:bg-slate-300 text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white border-2 border-slate-300 dark:border-slate-600',
-        accent: 'bg-amber-500 hover:bg-amber-600 text-black font-extrabold border-2 border-amber-600',
-        outline: 'bg-transparent border-[3px] border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-950',
-        ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100',
-        danger: 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-700',
+        primary: 'bg-[#044E3A] hover:bg-[#033b2c] text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs',
+        secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-700',
+        accent: 'bg-[#A3EAD2] hover:bg-[#8be0c5] text-[#044E3A] font-extrabold',
+        outline: 'bg-white hover:bg-slate-50 border border-[#ECE9E4] text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
+        ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200',
+        danger: 'bg-red-600 hover:bg-red-700 text-white',
+        success: 'bg-emerald-600 hover:bg-emerald-700 text-white',
       },
       size: {
-        normal: 'min-h-[48px] px-6 py-3 text-base',
-        large: 'min-h-[56px] px-8 py-4 text-lg',
-        icon: 'min-h-[48px] min-w-[48px] p-3 text-lg',
+        normal: 'min-h-[44px] px-5 py-2.5 text-sm gap-2',
+        medium: 'min-h-[44px] px-5 py-2.5 text-sm gap-2',
+        small: 'min-h-[36px] px-3.5 py-1.5 text-xs gap-1.5',
+        large: 'min-h-[52px] px-7 py-3.5 text-base gap-2.5',
+        icon: 'min-h-[44px] min-w-[44px] p-2.5 text-base justify-center',
       },
     },
     defaultVariants: {
@@ -31,18 +34,25 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   ariaLabel?: string;
+  isLoading?: boolean;
+  loadingText?: string;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, children, ariaLabel, ...props }, ref) => {
+  ({ className, variant, size, children, ariaLabel, isLoading, loadingText, disabled, ...props }, ref) => {
     return (
       <button
         ref={ref}
         className={cn(buttonVariants({ variant, size, className }))}
         aria-label={ariaLabel}
+        aria-disabled={disabled || isLoading}
+        disabled={disabled || isLoading}
         {...props}
       >
-        {children}
+        {isLoading && (
+          <span className="inline-block w-5 h-5 border-3 border-current border-t-transparent rounded-full animate-spin mr-2" aria-hidden="true" />
+        )}
+        {isLoading && loadingText ? loadingText : children}
       </button>
     );
   }

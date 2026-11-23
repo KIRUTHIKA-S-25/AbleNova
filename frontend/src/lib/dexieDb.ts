@@ -1,5 +1,7 @@
 import Dexie, { type Table } from 'dexie';
-import { Lesson, Quiz, AccessibilityProfile, OfflineEvent } from '@/types';
+import { Lesson } from '@/features/lesson/types/Lesson';
+import { Quiz } from '@/features/quiz/types/quiz';
+import { AccessibilityProfile, OfflineEvent } from '@/types';
 
 export interface CachedLesson extends Lesson {
   cached_at: string;
@@ -18,8 +20,8 @@ export class AbleNovaOfflineDB extends Dexie {
   constructor() {
     super('AbleNovaDB');
     this.version(1).stores({
-      cachedLessons: 'id, topic_id, difficulty',
-      cachedQuizzes: 'id, lesson_id',
+      cachedLessons: 'id, courseId, difficulty',
+      cachedQuizzes: 'id, lessonId',
       accessibilityProfile: 'id',
       syncQueue: 'local_id, type, created_at, synced',
     });
